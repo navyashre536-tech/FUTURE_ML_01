@@ -1,26 +1,37 @@
+# forecasting.py
+
 import pandas as pd
 import matplotlib.pyplot as plt
+from prophet import Prophet   # install with: pip install prophet
 
-# Example: load sample sales data
-# (Later replace 'sales.csv' with your actual dataset in dataset/ folder)
-data = pd.DataFrame(
-{
-    "Date": pd.date_range(start="2023-01-01", periods=30, freq="D"),
-    "Sales": [100, 120, 130, 90, 150, 160, 200, 180, 175, 190,
-              210, 230, 250, 240, 260, 270, 300, 310, 305, 320,
-              330, 340, 360, 370, 380, 390, 400, 410, 420, 430]
-}
-)
+# Load dataset
+data = pd.read_csv("datasales.csv")
 
 # Convert Date column
 data['Date'] = pd.to_datetime(data['Date'])
 
-# Plot sales trend
-plt.figure(figsize=(10,5))
-plt.plot(data['Date'], data['Sales'], marker='o')
-plt.title("Sample Sales Trend")
+# Prophet requires columns: ds (date), y (value)
+df = data.rename(columns={'Date': 'ds', 'Sales': 'y'})
+
+# Build Prophet model
+model = Prophet(daily_seasonality=True, yearly_seasonality=True)
+model.fit(df)
+
+# Create future dataframe for next 6 months (180 days)
+future = model.make_future_dataframe(periods=180, freq='D')
+
+# Forecast
+forecast = model.predict(future)
+
+# Plot forecast
+fig1 = model.plot(forecast)
+plt.title("Sales Forecast")
 plt.xlabel("Date")
 plt.ylabel("Sales")
-plt.grid(True)
-plt.savefig("sales_trend.png")  # Saves the chart as an image
-plt.show()
+plt.savefig("forecast_trend.png")
+
+# Plot seasonality
+fig2 = model.plot_components(forecast)
+plt.savefig("forecast_seasonality.png")
+
+print("✅ Forecast completed! Plots saved as 'forecast_trend.png' and 'forecast_seasonality.png'")
